@@ -7,7 +7,11 @@ meta {
 post {
   url: {{BASE_URL}}/roles
   body: json
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YjIwMzg3ZC03YzEyLTQxYWMtOGEwZS0zMWY0OTE5YjBhOTMiLCJ1c2VybmFtZSI6IkxvcmV0byIsImVtYWlsIjoibG9yZXRvLmNnQGdtYWlsLmNvbSIsInJvbGUiOiJVc2VyIiwiaWF0IjoxNzY1NzE5MDYxLCJleHAiOjE3NjU3NjIyNjF9.gcOO_8rjnd9F-8ycyVc64R6QyDcUkxW3XZgxyKsE21o
 }
 
 body:json {
