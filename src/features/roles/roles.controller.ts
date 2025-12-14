@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CreateRoleDto } from './dtos/create-role.dto';
@@ -14,20 +14,27 @@ export class RolesController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(RolesGuard, AuthGuard)
   @Roles('Admin')
+  @ApiBearerAuth()
   async create(@Body() newRole: CreateRoleDto): Promise<Role> {
-    // TODO: Crear registros de roles en las tablas
     return await this.rolesService.createRole(newRole);
   }
 
   @Get()
-  @UseGuards(AuthGuard, RolesGuard)
-  @ApiBearerAuth()
+  @UseGuards(RolesGuard, AuthGuard)
   @Roles('Admin')
+  @ApiBearerAuth()
   getAllRoles(): Promise<Role[]> {
     return this.rolesService.getAllRoles();
   }
 
+  @Get(':id')
+  @UseGuards(RolesGuard, AuthGuard)
+  @Roles('Admin', 'User')
+  @ApiBearerAuth()
+  async getRoleById(@Param('id', ParseUUIDPipe) id: string): Promise<Role | null> {
+    return await this.rolesService.getRoleById(id);
+  }
 
 }

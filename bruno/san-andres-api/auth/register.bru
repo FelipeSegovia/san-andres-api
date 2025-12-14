@@ -1,0 +1,25 @@
+meta {
+  name: register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{BASE_URL}}/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "firstName": "Felipe",
+    "lastName": "Segovia",
+    "email": "felipe.segovia.rod@gmail.com",
+    "password": "Fe.89104665"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

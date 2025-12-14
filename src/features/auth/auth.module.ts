@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
   controllers: [AuthController],
@@ -18,6 +19,7 @@ import { ConfigService } from '@nestjs/config';
       }),
     }),
     UserModule,
+    RolesModule,
   ],
 })
 export class AuthModule {

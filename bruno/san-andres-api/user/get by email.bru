@@ -1,0 +1,52 @@
+meta {
+  name: get by email
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{BASE_URL}}/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: '''
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDRkM2UxMi1jMGY0LTQ4YzktOTYwMC03OTIzMmEzM2JkNzAiLCJ1c2VybmFtZSI6IkZlbGlwZSIsImlhdCI6MTc2NTYxOTA3MiwiZXhwIjoxNzY1NjYyMjcyfQ.xPGy1uMnTx668xapGLVdiJRljrTOLBYEOfH9-NARXdE
+      @Roles('Admin', 'User')
+      @Roles('Admin', 'User')
+      @Roles('Admin', 'User')
+      @Roles('Admin', 'User')
+      @Roles('Admin', 'User')
+  '''
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDRkM2UxMi1jMGY0LTQ4YzktOTYwMC03OTIzMmEzM2JkNzAiLCJ1c2VybmFtZSI6IkZlbGlwZSIsImVtYWlsIjoiZmVsaXBlLnNlZ292aWEucm9kQGdtYWlsLmNvbSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc2NTY3Mjc4NiwiZXhwIjoxNzY1NzE1OTg2fQ.9kSBqDTJMHP_abT-RSoxFOfzMLU4JurcPVTA7hcvcdM
+}
+
+body:json {
+  {
+    "email": "felipe.segovia.rod@gmail.com"
+  }
+}
+
+docs {
+  # Actualizar Usuario
+  
+  Este endpoint permite actualizar un usuario de forma parcial.
+  Solo los usuarios con rol Admin pueden actualizar usuarios.
+  
+  ## Campos opcionales:
+  - `firstName`: Nombre del usuario
+  - `lastName`: Apellido del usuario
+  - `email`: Email del usuario (debe ser único)
+  - `password`: Nueva contraseña
+  - `roleId`: ID del rol a asignar (UUID válido)
+  
+  ## Notas:
+  - Todos los campos son opcionales
+  - Solo se actualizarán los campos que se envíen en el body
+  - Requiere autenticación con Bearer token
+  - Requiere rol Admin para ejecutar esta acción
+}

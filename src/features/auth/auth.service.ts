@@ -11,17 +11,21 @@ import { CreateUserDto } from '../user/dtos/create-user.dto';
 import { AccessToken } from './interfaces/access-token';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { RolesService } from '../roles/roles.service';
+import { User } from '../user/entity/user.entity';
+import { Role } from '../roles/entity/role.entity';
 
 @Injectable()
 export class AuthService {
 
   constructor(
     private readonly userService: UserService,
+    private readonly roleService: RolesService,
     private readonly jwtService: JwtService) {
   }
 
   async signIn({ email, password: pass }: SigninDto): Promise<AccessToken> {
-    const user = await this.userService.findOneByEmail(email);
+    const user = (await this.userService.findOneByEmail(email))?.toJSON() as User;
 
     if (!user) throw new NotFoundException();
 
@@ -31,7 +35,9 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const payload = { sub: user.id, username: user.firstName };
+    const roleUser = (await this.roleService.getRoleById(user.roleId))?.toJSON() as Role;
+
+    const payload = { sub: user.id, username: user.firstName, email: user.email, role: roleUser?.name };
 
     const accessToken = this.jwtService.sign(payload);
     return {

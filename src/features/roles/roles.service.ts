@@ -19,6 +19,10 @@ export class RolesService {
   }
 
   async getRoleByName(name: string): Promise<Role | null> {
-    return this.roleModel.findOne({ where: { name } });
+    return await this.roleModel.findOne({ where: { name } });
+  }
+
+  async getRoleById(id: string): Promise<Role | null> {
+    return this.roleModel.findByPk(id);
   }
 }
