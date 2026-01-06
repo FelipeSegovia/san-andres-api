@@ -1,0 +1,16 @@
+meta {
+  name: validate
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{BASE_URL}}/auth/validate
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
