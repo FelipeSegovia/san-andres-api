@@ -40,7 +40,7 @@ export class AuthController {
       throw new UnauthorizedException("Token no proporcionado");
     }
 
-    const token = authorization.replace("Bearer ", "");
+    const token = authorization.replace(/^Bearer\s+/i, "");
     const validateToken = await this.authService.validateToken(token);
     return { validateToken };
   }
