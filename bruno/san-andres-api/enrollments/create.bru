@@ -1,0 +1,118 @@
+meta {
+  name: create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/enrollments
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "student": {
+      "names": "Juan Carlos",
+      "lastNames": "Pérez González",
+      "rut": "12345678-9",
+      "birthDate": "2015-03-15",
+      "nationality": "Chilena",
+      "currentAddress": "Av. Principal 123, Departamento 45",
+      "commune": "Santiago",
+      "gender": "Masculino",
+      "prevision": "FONASA",
+      "medicalConditions": "Ninguna",
+      "allergies": "Polen",
+      "medications": "Ninguna",
+      "specialNeeds": "Ninguna"
+    },
+    "parents": [
+      {
+        "parentType": "PADRE",
+        "names": "Carlos",
+        "lastNames": "Pérez Martínez",
+        "rut": "98765432-1",
+        "nationality": "Chilena",
+        "occupation": "Ingeniero",
+        "educationLevel": "Universitario",
+        "workplace": "Empresa ABC",
+        "phone": "+56912345678",
+        "email": "carlos.perez@example.com"
+      },
+      {
+        "parentType": "MADRE",
+        "names": "María",
+        "lastNames": "González López",
+        "rut": "11223344-5",
+        "nationality": "Chilena",
+        "occupation": "Profesora",
+        "educationLevel": "Universitario",
+        "workplace": "Colegio XYZ",
+        "phone": "+56987654321",
+        "email": "maria.gonzalez@example.com"
+      }
+    ],
+    "familyInformation": {
+      "householdHead": "AMBOS",
+      "monthlyIncome": "Entre $400.001 y $600.000",
+      "socialProgramChileSolidario": false,
+      "socialProgramPuente": false,
+      "socialProgramSuf": false,
+      "housingType": "PROPIA",
+      "housingStructure": "Casa",
+      "hasDrinkingWater": true,
+      "hasElectricity": true,
+      "bedroomsCount": 3,
+      "residentsCount": 4
+    },
+    "authorizedPerson": {
+      "householdHead": "ABUELOS MAT",
+      "monthlyIncome": "Entre $300.001 y $400.000",
+      "socialProgramChileSolidario": false,
+      "socialProgramPuente": false,
+      "socialProgramSuf": false,
+      "housingType": "PROPIA",
+      "housingStructure": "Casa",
+      "hasDrinkingWater": true,
+      "hasElectricity": true,
+      "bedroomsCount": 2,
+      "residentsCount": 2
+    },
+    "representative": {
+      "names": "Pedro",
+      "lastNames": "Pérez Martínez",
+      "rut": "99887766-5",
+      "relationship": "Tío",
+      "address": "Calle Secundaria 456",
+      "commune": "Santiago",
+      "phone": "+56911223344",
+      "mobilePhone": "+56955443322",
+      "email": "pedro.perez@example.com",
+      "occupation": "Comerciante",
+      "educationLevel": "Media",
+      "workplace": "Negocio Familiar",
+      "workplacePhone": "+56988776655",
+      "workplaceAddress": "Calle Comercial 789"
+    },
+    "academicYear": 2025,
+    "gradeLevel": "3° Básico",
+    "requiresJunaeb": true,
+    "requiresTransport": false,
+    "requiresExtendedHours": true,
+    "junaebPriority": "ALTA",
+    "transportPriority": null,
+    "extendedHoursPriority": "BAJA",
+    "observations": "Estudiante con necesidades especiales de alimentación",
+    "enrollmentDate": "2025-01-15"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

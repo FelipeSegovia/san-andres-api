@@ -5,6 +5,7 @@ import { UserModule } from './features/user/user.module';
 import { DatabaseModule } from './common/db/database.module';
 import { AuthModule } from './features/auth/auth.module';
 import { RolesModule } from './features/roles/roles.module';
+import { EnrollmentsModule } from './features/enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RolesModule } from './features/roles/roles.module';
     UserModule,
     AuthModule,
     RolesModule,
+    EnrollmentsModule,
   ],
   controllers: [],
   providers: [],
