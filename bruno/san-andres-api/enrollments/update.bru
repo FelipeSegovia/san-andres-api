@@ -1,0 +1,40 @@
+meta {
+  name: update
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{BASE_URL}}/enrollments/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:path {
+  id: <id_de_la_matricula>
+}
+
+body:json {
+  {
+    "academicYear": 2025,
+    "gradeLevel": "4° Básico",
+    "requiresJunaeb": true,
+    "requiresTransport": true,
+    "requiresExtendedHours": true,
+    "junaebPriority": "ALTA",
+    "transportPriority": "ALTA",
+    "extendedHoursPriority": "ALTA",
+    "observations": "Estudiante actualizado - Cambio de grado y nuevas necesidades",
+    "status": "ACTIVA",
+    "enrollmentDate": "2025-01-20"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

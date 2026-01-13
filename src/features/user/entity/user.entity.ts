@@ -2,14 +2,12 @@ import {
   BelongsTo,
   Column,
   DataType,
-  ForeignKey,
   Model,
   Table,
-} from 'sequelize-typescript';
-import { Role } from 'src/features/roles/entity/role.entity';
+} from "sequelize-typescript";
+import { Role } from "src/features/roles/entity/role.entity";
 
-
-@Table({ tableName: 'users', timestamps: true, paranoid: false })
+@Table({ tableName: "users", timestamps: true, paranoid: false })
 export class User extends Model {
   @Column({
     type: DataType.UUID,
@@ -49,8 +47,6 @@ export class User extends Model {
   })
   declare isActive: boolean;
 
-  // belongsTo significa que un usuario pertenece a un rol
-  @ForeignKey(() => Role)
   @Column({
     type: DataType.UUID,
     allowNull: true,
@@ -58,8 +54,8 @@ export class User extends Model {
   declare roleId: string;
 
   @BelongsTo(() => Role, {
-    foreignKey: 'roleId',
-    targetKey: 'id', // Referencia la clave primaria en Role
+    foreignKey: "roleId",
+    targetKey: "id",
   })
   declare role: Role;
 }
