@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { EnrollmentsService } from "./enrollments.service";
 import { CreateEnrollmentDto } from "./dtos/create-enrollment.dto";
@@ -20,7 +21,13 @@ import { Roles } from "../../decorators/roles.decorator";
 @ApiTags("Enrollments")
 @Controller("enrollments")
 export class EnrollmentsController {
-  constructor(private readonly enrollmentsService: EnrollmentsService) {}
+  constructor(
+    private readonly enrollmentsService: EnrollmentsService,
+    @InjectPinoLogger(EnrollmentsController.name)
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(EnrollmentsController.name);
+  }
 
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
@@ -29,7 +36,33 @@ export class EnrollmentsController {
   async create(
     @Body() createEnrollmentDto: CreateEnrollmentDto
   ): Promise<Enrollment> {
-    return await this.enrollmentsService.create(createEnrollmentDto);
+    const { student, academicYear } = createEnrollmentDto;
+    this.logger.info(
+      { studentName: student.names, academicYear },
+      "enrollments:create request"
+    );
+    try {
+      const enrollment = await this.enrollmentsService.create(
+        createEnrollmentDto
+      );
+      this.logger.info(
+        {
+          enrollmentId: enrollment.id,
+          enrollmentNumber: enrollment.enrollmentNumber,
+        },
+        "enrollments:create success"
+      );
+      return enrollment;
+    } catch (error) {
+      this.logger.error(
+        {
+          studentName: student.names,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:create failed"
+      );
+      throw error;
+    }
   }
 
   @Get()
@@ -37,7 +70,21 @@ export class EnrollmentsController {
   @Roles("Admin", "User")
   @ApiBearerAuth()
   async findAll(): Promise<Enrollment[]> {
-    return await this.enrollmentsService.findAll();
+    this.logger.info({}, "enrollments:getAll request");
+    try {
+      const enrollments = await this.enrollmentsService.findAll();
+      this.logger.info(
+        { count: enrollments.length },
+        "enrollments:getAll success"
+      );
+      return enrollments;
+    } catch (error) {
+      this.logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        "enrollments:getAll failed"
+      );
+      throw error;
+    }
   }
 
   @Get(":id")
@@ -45,7 +92,24 @@ export class EnrollmentsController {
   @Roles("Admin", "User")
   @ApiBearerAuth()
   async findOne(@Param("id") id: string): Promise<Enrollment> {
-    return await this.enrollmentsService.findOne(id);
+    this.logger.info({ enrollmentId: id }, "enrollments:getById request");
+    try {
+      const enrollment = await this.enrollmentsService.findOne(id);
+      this.logger.info(
+        { enrollmentId: id, enrollmentNumber: enrollment.enrollmentNumber },
+        "enrollments:getById success"
+      );
+      return enrollment;
+    } catch (error) {
+      this.logger.error(
+        {
+          enrollmentId: id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:getById failed"
+      );
+      throw error;
+    }
   }
 
   @Get("number/:enrollmentNumber")
@@ -55,9 +119,26 @@ export class EnrollmentsController {
   async findByEnrollmentNumber(
     @Param("enrollmentNumber") enrollmentNumber: string
   ): Promise<Enrollment> {
-    return await this.enrollmentsService.findByEnrollmentNumber(
-      enrollmentNumber
-    );
+    this.logger.info({ enrollmentNumber }, "enrollments:getByNumber request");
+    try {
+      const enrollment = await this.enrollmentsService.findByEnrollmentNumber(
+        enrollmentNumber
+      );
+      this.logger.info(
+        { enrollmentId: enrollment.id, enrollmentNumber },
+        "enrollments:getByNumber success"
+      );
+      return enrollment;
+    } catch (error) {
+      this.logger.error(
+        {
+          enrollmentNumber,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:getByNumber failed"
+      );
+      throw error;
+    }
   }
 
   @Patch(":id")
@@ -68,7 +149,27 @@ export class EnrollmentsController {
     @Param("id") id: string,
     @Body() updateEnrollmentDto: UpdateEnrollmentDto
   ): Promise<Enrollment> {
-    return await this.enrollmentsService.update(id, updateEnrollmentDto);
+    this.logger.info({ enrollmentId: id }, "enrollments:update request");
+    try {
+      const enrollment = await this.enrollmentsService.update(
+        id,
+        updateEnrollmentDto
+      );
+      this.logger.info(
+        { enrollmentId: id, enrollmentNumber: enrollment.enrollmentNumber },
+        "enrollments:update success"
+      );
+      return enrollment;
+    } catch (error) {
+      this.logger.error(
+        {
+          enrollmentId: id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:update failed"
+      );
+      throw error;
+    }
   }
 
   @Delete(":id")
@@ -76,6 +177,19 @@ export class EnrollmentsController {
   @Roles("Admin")
   @ApiBearerAuth()
   async remove(@Param("id") id: string): Promise<void> {
-    return await this.enrollmentsService.remove(id);
+    this.logger.info({ enrollmentId: id }, "enrollments:delete request");
+    try {
+      await this.enrollmentsService.remove(id);
+      this.logger.info({ enrollmentId: id }, "enrollments:delete success");
+    } catch (error) {
+      this.logger.error(
+        {
+          enrollmentId: id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:delete failed"
+      );
+      throw error;
+    }
   }
 }

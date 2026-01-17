@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { InjectModel } from "@nestjs/sequelize";
 import { Sequelize } from "sequelize-typescript";
 import { Enrollment } from "./entity/enrollment.entity";
@@ -31,10 +32,19 @@ export class EnrollmentsService {
     private readonly authorizedPersonModel: typeof AuthorizedPerson,
     @InjectModel(Representative)
     private readonly representativeModel: typeof Representative,
-    private readonly sequelize: Sequelize
-  ) {}
+    private readonly sequelize: Sequelize,
+    @InjectPinoLogger(EnrollmentsService.name)
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(EnrollmentsService.name);
+  }
 
   async create(createEnrollmentDto: CreateEnrollmentDto): Promise<Enrollment> {
+    const { student, academicYear } = createEnrollmentDto;
+    this.logger.info(
+      { studentName: student.names, academicYear },
+      "enrollments:create service request"
+    );
     const transaction = await this.sequelize.transaction();
 
     try {
@@ -53,6 +63,10 @@ export class EnrollmentsService {
       });
 
       if (existingStudent) {
+        this.logger.warn(
+          { studentRut: student.rut },
+          "enrollments:create student already exists"
+        );
         throw new ConflictException(
           `Ya existe un estudiante con el RUT ${student.rut}`
         );
@@ -126,45 +140,83 @@ export class EnrollmentsService {
       );
 
       await transaction.commit();
+      this.logger.info(
+        { enrollmentId: enrollment.id, enrollmentNumber },
+        "enrollments:create success"
+      );
 
       return await this.findOne(enrollment.id);
     } catch (error) {
       await transaction.rollback();
 
       if (error instanceof ConflictException) {
+        this.logger.warn(
+          { studentName: student.names, error: error.message },
+          "enrollments:create conflict"
+        );
         throw error;
       }
 
       if (error instanceof UniqueConstraintError) {
+        this.logger.warn(
+          { studentName: student.names },
+          "enrollments:create unique constraint violation"
+        );
         throw new ConflictException("Ya existe una matrícula con estos datos");
       }
 
       if (error instanceof Error) {
+        this.logger.error(
+          { studentName: student.names, error: error.message },
+          "enrollments:create failed"
+        );
         throw new BadRequestException(error.message);
       }
 
+      this.logger.error(
+        { studentName: student.names },
+        "enrollments:create unexpected error"
+      );
       throw new BadRequestException("Error al crear la matrícula");
     }
   }
 
   async findAll(): Promise<Enrollment[]> {
-    return await this.enrollmentModel.findAll({
-      include: [
-        {
-          model: Student,
-          include: [
-            { model: Parent },
-            { model: FamilyInformation },
-            { model: AuthorizedPerson },
-            { model: Representative },
-          ],
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
+    this.logger.debug({}, "enrollments:findAll service request");
+    try {
+      const enrollments = await this.enrollmentModel.findAll({
+        include: [
+          {
+            model: Student,
+            include: [
+              { model: Parent },
+              { model: FamilyInformation },
+              { model: AuthorizedPerson },
+              { model: Representative },
+            ],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+      });
+      this.logger.debug(
+        { count: enrollments.length },
+        "enrollments:findAll success"
+      );
+      return enrollments;
+    } catch (error) {
+      this.logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        "enrollments:findAll failed"
+      );
+      throw error;
+    }
   }
 
   async findOne(idOrNumber: string): Promise<Enrollment> {
+    this.logger.debug(
+      { identifier: idOrNumber },
+      "enrollments:findOne service request"
+    );
     const isUUID =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         idOrNumber
@@ -172,75 +224,127 @@ export class EnrollmentsService {
 
     let enrollment: Enrollment | null;
 
-    if (isUUID) {
-      enrollment = await this.enrollmentModel.findByPk(idOrNumber, {
-        include: [
-          {
-            model: Student,
-            include: [
-              { model: Parent },
-              { model: FamilyInformation },
-              { model: AuthorizedPerson },
-              { model: Representative },
-            ],
-          },
-        ],
-      });
-    } else {
-      enrollment = await this.enrollmentModel.findOne({
-        where: { enrollmentNumber: idOrNumber },
-        include: [
-          {
-            model: Student,
-            include: [
-              { model: Parent },
-              { model: FamilyInformation },
-              { model: AuthorizedPerson },
-              { model: Representative },
-            ],
-          },
-        ],
-      });
-    }
+    try {
+      if (isUUID) {
+        enrollment = await this.enrollmentModel.findByPk(idOrNumber, {
+          include: [
+            {
+              model: Student,
+              include: [
+                { model: Parent },
+                { model: FamilyInformation },
+                { model: AuthorizedPerson },
+                { model: Representative },
+              ],
+            },
+          ],
+        });
+      } else {
+        enrollment = await this.enrollmentModel.findOne({
+          where: { enrollmentNumber: idOrNumber },
+          include: [
+            {
+              model: Student,
+              include: [
+                { model: Parent },
+                { model: FamilyInformation },
+                { model: AuthorizedPerson },
+                { model: Representative },
+              ],
+            },
+          ],
+        });
+      }
 
-    if (!enrollment) {
-      throw new NotFoundException(
-        `Matrícula con id o número ${idOrNumber} no encontrada`
+      if (!enrollment) {
+        this.logger.warn(
+          { identifier: idOrNumber },
+          "enrollments:findOne not found"
+        );
+        throw new NotFoundException(
+          `Matrícula con id o número ${idOrNumber} no encontrada`
+        );
+      }
+
+      this.logger.debug(
+        { enrollmentId: enrollment.id },
+        "enrollments:findOne success"
       );
+      return enrollment;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        {
+          identifier: idOrNumber,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:findOne failed"
+      );
+      throw error;
     }
-
-    return enrollment;
   }
 
   async findByEnrollmentNumber(enrollmentNumber: string): Promise<Enrollment> {
-    const enrollment = await this.enrollmentModel.findOne({
-      where: { enrollmentNumber },
-      include: [
-        {
-          model: Student,
-          include: [
-            { model: Parent },
-            { model: FamilyInformation },
-            { model: AuthorizedPerson },
-            { model: Representative },
-          ],
-        },
-      ],
-    });
+    this.logger.debug(
+      { enrollmentNumber },
+      "enrollments:findByEnrollmentNumber service request"
+    );
+    try {
+      const enrollment = await this.enrollmentModel.findOne({
+        where: { enrollmentNumber },
+        include: [
+          {
+            model: Student,
+            include: [
+              { model: Parent },
+              { model: FamilyInformation },
+              { model: AuthorizedPerson },
+              { model: Representative },
+            ],
+          },
+        ],
+      });
 
-    if (!enrollment) {
-      throw new NotFoundException(
-        `Matrícula con número ${enrollmentNumber} no encontrada`
+      if (!enrollment) {
+        this.logger.warn(
+          { enrollmentNumber },
+          "enrollments:findByEnrollmentNumber not found"
+        );
+        throw new NotFoundException(
+          `Matrícula con número ${enrollmentNumber} no encontrada`
+        );
+      }
+
+      this.logger.debug(
+        { enrollmentId: enrollment.id },
+        "enrollments:findByEnrollmentNumber success"
       );
+      return enrollment;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        {
+          enrollmentNumber,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:findByEnrollmentNumber failed"
+      );
+      throw error;
     }
-
-    return enrollment;
   }
 
   async update(
     idOrNumber: string,
     updateEnrollmentDto: UpdateEnrollmentDto
   ): Promise<Enrollment> {
+    this.logger.info(
+      { identifier: idOrNumber },
+      "enrollments:update service request"
+    );
     const isUUID =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         idOrNumber
@@ -248,21 +352,25 @@ export class EnrollmentsService {
 
     let enrollment: Enrollment | null;
 
-    if (isUUID) {
-      enrollment = await this.enrollmentModel.findByPk(idOrNumber);
-    } else {
-      enrollment = await this.enrollmentModel.findOne({
-        where: { enrollmentNumber: idOrNumber },
-      });
-    }
-
-    if (!enrollment) {
-      throw new NotFoundException(
-        `Matrícula con id o número ${idOrNumber} no encontrada`
-      );
-    }
-
     try {
+      if (isUUID) {
+        enrollment = await this.enrollmentModel.findByPk(idOrNumber);
+      } else {
+        enrollment = await this.enrollmentModel.findOne({
+          where: { enrollmentNumber: idOrNumber },
+        });
+      }
+
+      if (!enrollment) {
+        this.logger.warn(
+          { identifier: idOrNumber },
+          "enrollments:update not found"
+        );
+        throw new NotFoundException(
+          `Matrícula con id o número ${idOrNumber} no encontrada`
+        );
+      }
+
       const { enrollmentDate, ...restUpdateData } = updateEnrollmentDto;
       const updateData: Partial<Enrollment> = { ...restUpdateData };
 
@@ -271,22 +379,46 @@ export class EnrollmentsService {
       }
 
       await enrollment.update(updateData);
+      this.logger.info(
+        { enrollmentId: enrollment.id },
+        "enrollments:update success"
+      );
 
       return await this.findOne(idOrNumber);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
       if (error instanceof UniqueConstraintError) {
+        this.logger.warn(
+          { identifier: idOrNumber },
+          "enrollments:update unique constraint violation"
+        );
         throw new ConflictException("Ya existe una matrícula con estos datos");
       }
 
       if (error instanceof Error) {
+        this.logger.error(
+          { identifier: idOrNumber, error: error.message },
+          "enrollments:update failed"
+        );
         throw new BadRequestException(error.message);
       }
 
+      this.logger.error(
+        { identifier: idOrNumber },
+        "enrollments:update unexpected error"
+      );
       throw new BadRequestException("Error al actualizar la matrícula");
     }
   }
 
   async remove(idOrNumber: string): Promise<void> {
+    this.logger.info(
+      { identifier: idOrNumber },
+      "enrollments:delete service request"
+    );
     const isUUID =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         idOrNumber
@@ -294,21 +426,43 @@ export class EnrollmentsService {
 
     let enrollment: Enrollment | null;
 
-    if (isUUID) {
-      enrollment = await this.enrollmentModel.findByPk(idOrNumber);
-    } else {
-      enrollment = await this.enrollmentModel.findOne({
-        where: { enrollmentNumber: idOrNumber },
-      });
-    }
+    try {
+      if (isUUID) {
+        enrollment = await this.enrollmentModel.findByPk(idOrNumber);
+      } else {
+        enrollment = await this.enrollmentModel.findOne({
+          where: { enrollmentNumber: idOrNumber },
+        });
+      }
 
-    if (!enrollment) {
-      throw new NotFoundException(
-        `Matrícula con id o número ${idOrNumber} no encontrada`
+      if (!enrollment) {
+        this.logger.warn(
+          { identifier: idOrNumber },
+          "enrollments:delete not found"
+        );
+        throw new NotFoundException(
+          `Matrícula con id o número ${idOrNumber} no encontrada`
+        );
+      }
+
+      await enrollment.destroy();
+      this.logger.info(
+        { enrollmentId: enrollment.id },
+        "enrollments:delete success"
       );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        {
+          identifier: idOrNumber,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "enrollments:delete failed"
+      );
+      throw error;
     }
-
-    await enrollment.destroy();
   }
 
   private async generateEnrollmentNumber(

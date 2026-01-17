@@ -6,7 +6,9 @@ meta {
 
 get {
   url: {{BASE_URL}}/users
-  body: json
+  params:query {
+    email: felipe.segovia.rod@gmail.com
+  }
   auth: bearer
 }
 
@@ -14,28 +16,23 @@ auth:bearer {
   token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDRkM2UxMi1jMGY0LTQ4YzktOTYwMC03OTIzMmEzM2JkNzAiLCJ1c2VybmFtZSI6IkZlbGlwZSIsImVtYWlsIjoiZmVsaXBlLnNlZ292aWEucm9kQGdtYWlsLmNvbSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc2NTcxNjAzNSwiZXhwIjoxNzY1NzU5MjM1fQ.Af2aueYikhnhr4MXZHv8is1881ta0cYmHaHec3uNcDA
 }
 
-body:json {
-  {
-    "email": "felipe.segovia.rod@gmail.com"
-  }
-}
-
 docs {
-  # Actualizar Usuario
+  # Obtener Usuario por Email
   
-  Este endpoint permite actualizar un usuario de forma parcial.
-  Solo los usuarios con rol Admin pueden actualizar usuarios.
+  Este endpoint permite obtener un usuario por su dirección de email.
+  Los usuarios con rol Admin o User pueden consultar usuarios.
   
-  ## Campos opcionales:
-  - `firstName`: Nombre del usuario
-  - `lastName`: Apellido del usuario
-  - `email`: Email del usuario (debe ser único)
-  - `password`: Nueva contraseña
-  - `roleId`: ID del rol a asignar (UUID válido)
+  ## Query Parameters:
+  - `email`: Email del usuario a buscar (requerido, debe ser un email válido)
+  
+  ## Respuesta:
+  - Retorna el objeto User completo si se encuentra
+  - Retorna null si no se encuentra el usuario
+  - Lanza NotFoundException si el usuario no existe
   
   ## Notas:
-  - Todos los campos son opcionales
-  - Solo se actualizarán los campos que se envíen en el body
   - Requiere autenticación con Bearer token
-  - Requiere rol Admin para ejecutar esta acción
+  - Requiere rol Admin o User para ejecutar esta acción
+  - El email se envía como query parameter en la URL
+  - Ejemplo: `GET /users?email=usuario@example.com`
 }
